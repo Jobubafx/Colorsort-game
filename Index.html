@@ -54,20 +54,16 @@
 </head>
 <body>
   <h2>Color Sort Game 🎨</h2>
-
-  <!-- 🎵 Sounds -->
-  <audio id="move-sound" src="https://www.soundjay.com/button/button-3.mp3"></audio>
-  <audio id="win-sound" src="https://www.soundjay.com/button/button-4.mp3"></audio>
-
   <div id="coin">Coins: 0</div>
   <div id="level">Level: 1</div>
   <div id="message"></div>
   <div id="game"></div>
 
-  <!-- Controls -->
+  <!-- 🔁 Restart Button -->
   <button onclick="startNewLevel()">🔁 Restart</button>
-  <button onclick="skipLevel()">⏭ Skip (Watch Ad)</button>
-  <button onclick="buySkip()">💰 Skip (10 Coins)</button>
+
+  <!-- ⏭ Skip Level Button -->
+  <button onclick="skipLevel()">⏭ Skip Level (Watch Ad)</button>
 
   <div id="ad">📺 Watching Ad...</div>
 
@@ -76,16 +72,6 @@
     let tubes = [];
     let selectedTube = null;
     let currentLevel = 1;
-
-    function saveProgress() {
-      localStorage.setItem('coins', coins);
-      localStorage.setItem('level', currentLevel);
-    }
-
-    function loadProgress() {
-      coins = parseInt(localStorage.getItem('coins')) || 0;
-      currentLevel = parseInt(localStorage.getItem('level')) || 1;
-    }
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -97,7 +83,6 @@
     function addCoins(amount) {
       coins += amount;
       updateCoinsDisplay();
-      saveProgress();
     }
 
     function updateCoinsDisplay() {
@@ -135,7 +120,7 @@
       document.getElementById("message").innerText = '';
       document.getElementById("ad").style.display = 'none';
 
-      const numColors = Math.min(5 + Math.floor(currentLevel / 2), 10);
+      const numColors = Math.min(5 + Math.floor(currentLevel / 2), 10); // More colors as level increases
       const numTubes = numColors + 2;
 
       tubes = Array.from({ length: numTubes }, () => []);
@@ -161,15 +146,13 @@
     }
 
     function checkWin() {
-      const won = tubes.every(tube =>
+      const won = tubes.every(tube => 
         tube.length === 0 || (tube.length === 4 && tube.every(c => c === tube[0]))
       );
       if (won) {
-        document.getElementById("win-sound").play();
         document.getElementById("message").innerText = "🎉 You win! +20 coins";
         addCoins(20);
         currentLevel++;
-        saveProgress();
         updateLevelDisplay();
         setTimeout(startNewLevel, 1500);
       }
@@ -184,7 +167,6 @@
           if (tubes[i].length === 0 || tubes[i][tubes[i].length - 1] === movingColor) {
             tubes[i].push(tubes[selectedTube].pop());
             selectedTube = null;
-            document.getElementById("move-sound").play();
             renderTubes();
             checkWin();
             return;
@@ -196,31 +178,19 @@
 
     function skipLevel() {
       document.getElementById("ad").style.display = 'flex';
+
+      // Simulate ad for 5 seconds
       setTimeout(() => {
         document.getElementById("ad").style.display = 'none';
         alert("Ad finished! Level skipped. +10 coins");
         addCoins(10);
         currentLevel++;
-        saveProgress();
         startNewLevel();
       }, 5000);
     }
 
-    function buySkip() {
-      if (coins >= 10) {
-        coins -= 10;
-        alert("Level skipped using coins!");
-        currentLevel++;
-        saveProgress();
-        startNewLevel();
-      } else {
-        alert("Not enough coins!");
-      }
-    }
-
-    // 🔁 Game start
-    loadProgress();
+    // Start game
     startNewLevel();
   </script>
 </body>
-  </html>
+</html>
