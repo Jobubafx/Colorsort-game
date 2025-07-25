@@ -1,187 +1,226 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Color Sort Game</title>
   <style>
     body {
-      font-family: sans-serif;
-      margin: 0;
-      background: #f3f3f3;
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      text-align: center;
     }
-    .page {
-      display: none;
-      padding: 20px;
-    }
-    .page.active {
-      display: block;
-    }
-    .game-container {
+    #game {
       display: flex;
-      justify-content: center;
       flex-wrap: wrap;
-      margin-top: 20px;
+      justify-content: center;
+      margin: 20px;
     }
     .tube {
       width: 60px;
-      height: 200px;
-      border: 2px solid #000;
+      height: 240px;
       margin: 10px;
+      border: 2px solid #ccc;
       border-radius: 10px;
+      background: #fff;
       display: flex;
       flex-direction: column-reverse;
       justify-content: flex-start;
-      background-color: white;
-      padding: 5px;
+      align-items: center;
     }
-    .ball {
-      width: 100%;
-      height: 25%;
-      border-radius: 50%;
-      margin-bottom: 2px;
+    .color {
+      width: 50px;
+      height: 50px;
+      margin: 2px 0;
+      border-radius: 6px;
     }
-    .red { background: red; }
-    .blue { background: blue; }
-    .green { background: green; }
-    .yellow { background: yellow; }
-    .menu-buttons button, .game-buttons button {
+    #coin, #level, #message {
+      font-size: 18px;
+      margin: 8px;
+    }
+    #ad {
+      margin: 20px auto;
+      width: 300px;
+      height: 250px;
+      background: #e0e0e0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+    }
+    button {
       margin: 5px;
-      padding: 10px;
     }
   </style>
 </head>
 <body>
-  <section id="menu-page" class="page active">
-    <h1>Color Sort Game</h1>
-    <input id="username" placeholder="Enter your name" />
-    <div class="menu-buttons">
-      <button onclick="startGame()">Start Game</button>
-      <button onclick="goToShop()">Shop</button>
-    </div>
-  </section>  <section id="game-page" class="page">
-    <h2>Level <span id="level-number">1</span></h2>
-    <div id="game-container" class="game-container"></div>
-    <div class="game-buttons">
-      <button onclick="restartGame()">Restart</button>
-      <button onclick="skipLevel()">Skip</button>
-      <button onclick="goToMenu()">Menu</button>
-    </div>
-  </section>  <section id="shop-page" class="page">
-    <h2>Shop</h2>
-    <p>Coins: <span id="coin-count">0</span></p>
-    <div>
-      <button onclick="buySkip()">Buy Skip (10 coins)</button>
-    </div>
-    <button onclick="goToMenu()">Back</button>
-  </section>  <script>
-    const pages = document.querySelectorAll(".page");
+  <h2>Color Sort Game 🎨</h2>
 
-    const gameState = {
-      username: "",
-      currentLevel: 1,
-      coins: 0,
-      skips: 0,
-      tubes: []
-    };
+  <!-- 🎵 Sounds -->
+  <audio id="move-sound" src="https://www.soundjay.com/button/button-3.mp3"></audio>
+  <audio id="win-sound" src="https://www.soundjay.com/button/button-4.mp3"></audio>
 
-    function showPage(id) {
-      pages.forEach(p => p.classList.remove("active"));
-      document.getElementById(id).classList.add("active");
+  <div id="coin">Coins: 0</div>
+  <div id="level">Level: 1</div>
+  <div id="message"></div>
+  <div id="game"></div>
+
+  <!-- Controls -->
+  <button onclick="startNewLevel()">🔁 Restart</button>
+  <button onclick="skipLevel()">⏭ Skip (Watch Ad)</button>
+  <button onclick="buySkip()">💰 Skip (10 Coins)</button>
+
+  <div id="ad">📺 Watching Ad...</div>
+
+  <script>
+    let coins = 0;
+    let tubes = [];
+    let selectedTube = null;
+    let currentLevel = 1;
+
+    function saveProgress() {
+      localStorage.setItem('coins', coins);
+      localStorage.setItem('level', currentLevel);
     }
 
-    function goToMenu() {
-      showPage("menu-page");
-      document.getElementById("coin-count").textContent = gameState.coins;
+    function loadProgress() {
+      coins = parseInt(localStorage.getItem('coins')) || 0;
+      currentLevel = parseInt(localStorage.getItem('level')) || 1;
     }
 
-    function goToShop() {
-      showPage("shop-page");
-      document.getElementById("coin-count").textContent = gameState.coins;
-    }
-
-    function startGame() {
-      const name = document.getElementById("username").value;
-      if (!name) return alert("Please enter a username");
-      gameState.username = name;
-      loadLevel(gameState.currentLevel);
-      showPage("game-page");
-    }
-
-    function restartGame() {
-      loadLevel(gameState.currentLevel);
-    }
-
-    function skipLevel() {
-      if (gameState.skips > 0) {
-        gameState.skips--;
-        gameState.currentLevel++;
-        loadLevel(gameState.currentLevel);
-      } else {
-        alert("Not enough skips. Buy more in the shop.");
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
     }
 
-    function buySkip() {
-      if (gameState.coins >= 10) {
-        gameState.coins -= 10;
-        gameState.skips++;
-        alert("Skip purchased!");
-      } else {
-        alert("Not enough coins");
-      }
-      document.getElementById("coin-count").textContent = gameState.coins;
+    function addCoins(amount) {
+      coins += amount;
+      updateCoinsDisplay();
+      saveProgress();
     }
 
-    function loadLevel(level) {
-      document.getElementById("level-number").textContent = level;
-      // Example puzzles, real logic should load based on level
-      const puzzles = [
-        [
-          ["red", "blue", "red", "blue"],
-          ["green", "green", "yellow", "yellow"],
-          [],
-          []
-        ],
-        [
-          ["red", "red", "blue", "blue"],
-          ["yellow", "green", "yellow", "green"],
-          [],
-          []
-        ]
-      ];
-      gameState.tubes = puzzles[(level - 1) % puzzles.length];
-      renderGame();
+    function updateCoinsDisplay() {
+      document.getElementById("coin").innerText = "Coins: " + coins;
     }
 
-    function renderGame() {
-      const container = document.getElementById("game-container");
-      container.innerHTML = "";
-      gameState.tubes.forEach((tube, index) => {
+    function updateLevelDisplay() {
+      document.getElementById("level").innerText = "Level: " + currentLevel;
+    }
+
+    function renderTubes() {
+      const game = document.getElementById("game");
+      game.innerHTML = '';
+      tubes.forEach((tube, i) => {
         const tubeDiv = document.createElement("div");
         tubeDiv.className = "tube";
-        tubeDiv.dataset.index = index;
+        tubeDiv.onclick = () => handleTubeClick(i);
         tube.forEach(color => {
-          const ball = document.createElement("div");
-          ball.className = `ball ${color}`;
-          tubeDiv.appendChild(ball);
+          const colorDiv = document.createElement("div");
+          colorDiv.className = "color";
+          colorDiv.style.backgroundColor = getColor(color);
+          tubeDiv.appendChild(colorDiv);
         });
-        container.appendChild(tubeDiv);
+        game.appendChild(tubeDiv);
       });
     }
 
-    window.onload = () => {
-      if (localStorage.getItem("coins")) {
-        gameState.coins = parseInt(localStorage.getItem("coins"));
+    function getColor(num) {
+      const colors = ["red", "blue", "green", "yellow", "purple", "orange", "cyan", "magenta", "lime", "pink"];
+      return colors[num % colors.length];
+    }
+
+    function startNewLevel() {
+      document.getElementById("game").innerHTML = '';
+      document.getElementById("message").innerText = '';
+      document.getElementById("ad").style.display = 'none';
+
+      const numColors = Math.min(5 + Math.floor(currentLevel / 2), 10);
+      const numTubes = numColors + 2;
+
+      tubes = Array.from({ length: numTubes }, () => []);
+      let colors = [];
+      for (let i = 0; i < numColors; i++) {
+        for (let j = 0; j < 4; j++) {
+          colors.push(i);
+        }
       }
-      if (localStorage.getItem("username")) {
-        gameState.username = localStorage.getItem("username");
-        document.getElementById("username").value = gameState.username;
+
+      shuffle(colors);
+
+      let index = 0;
+      for (let i = 0; i < numColors; i++) {
+        for (let j = 0; j < 4; j++) {
+          tubes[i].push(colors[index++]);
+        }
+      }
+
+      renderTubes();
+      updateCoinsDisplay();
+      updateLevelDisplay();
+    }
+
+    function checkWin() {
+      const won = tubes.every(tube =>
+        tube.length === 0 || (tube.length === 4 && tube.every(c => c === tube[0]))
+      );
+      if (won) {
+        document.getElementById("win-sound").play();
+        document.getElementById("message").innerText = "🎉 You win! +20 coins";
+        addCoins(20);
+        currentLevel++;
+        saveProgress();
+        updateLevelDisplay();
+        setTimeout(startNewLevel, 1500);
       }
     }
 
-    window.onbeforeunload = () => {
-      localStorage.setItem("coins", gameState.coins);
-      localStorage.setItem("username", gameState.username);
+    function handleTubeClick(i) {
+      if (selectedTube === null) {
+        if (tubes[i].length > 0) selectedTube = i;
+      } else {
+        if (i !== selectedTube && tubes[selectedTube].length > 0 && tubes[i].length < 4) {
+          const movingColor = tubes[selectedTube][tubes[selectedTube].length - 1];
+          if (tubes[i].length === 0 || tubes[i][tubes[i].length - 1] === movingColor) {
+            tubes[i].push(tubes[selectedTube].pop());
+            selectedTube = null;
+            document.getElementById("move-sound").play();
+            renderTubes();
+            checkWin();
+            return;
+          }
+        }
+        selectedTube = null;
+      }
     }
-  </script></body>
-      </html>
+
+    function skipLevel() {
+      document.getElementById("ad").style.display = 'flex';
+      setTimeout(() => {
+        document.getElementById("ad").style.display = 'none';
+        alert("Ad finished! Level skipped. +10 coins");
+        addCoins(10);
+        currentLevel++;
+        saveProgress();
+        startNewLevel();
+      }, 5000);
+    }
+
+    function buySkip() {
+      if (coins >= 10) {
+        coins -= 10;
+        alert("Level skipped using coins!");
+        currentLevel++;
+        saveProgress();
+        startNewLevel();
+      } else {
+        alert("Not enough coins!");
+      }
+    }
+
+    // 🔁 Game start
+    loadProgress();
+    startNewLevel();
+  </script>
+</body>
+  </html>
