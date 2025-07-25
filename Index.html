@@ -1,202 +1,187 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Color Sort Game</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
       margin: 0;
-      padding: 0;
-      background: #f0f0f0;
+      background: #f3f3f3;
     }
     .page {
       display: none;
       padding: 20px;
     }
-    .active {
+    .page.active {
       display: block;
     }
-    .menu-btn {
-      display: inline-block;
-      margin: 10px;
-      padding: 10px 20px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+    .game-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
     }
     .tube {
       width: 60px;
       height: 200px;
       border: 2px solid #000;
-      border-radius: 10px;
       margin: 10px;
-      display: inline-block;
-      vertical-align: top;
-      position: relative;
-      background: white;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: flex-start;
+      background-color: white;
+      padding: 5px;
     }
-    .color {
+    .ball {
       width: 100%;
       height: 25%;
-      position: absolute;
-      bottom: 0;
-      border-top: 1px solid #000;
+      border-radius: 50%;
+      margin-bottom: 2px;
     }
-    .shop-item {
-      margin: 10px 0;
+    .red { background: red; }
+    .blue { background: blue; }
+    .green { background: green; }
+    .yellow { background: yellow; }
+    .menu-buttons button, .game-buttons button {
+      margin: 5px;
+      padding: 10px;
     }
   </style>
 </head>
 <body>
+  <section id="menu-page" class="page active">
+    <h1>Color Sort Game</h1>
+    <input id="username" placeholder="Enter your name" />
+    <div class="menu-buttons">
+      <button onclick="startGame()">Start Game</button>
+      <button onclick="goToShop()">Shop</button>
+    </div>
+  </section>  <section id="game-page" class="page">
+    <h2>Level <span id="level-number">1</span></h2>
+    <div id="game-container" class="game-container"></div>
+    <div class="game-buttons">
+      <button onclick="restartGame()">Restart</button>
+      <button onclick="skipLevel()">Skip</button>
+      <button onclick="goToMenu()">Menu</button>
+    </div>
+  </section>  <section id="shop-page" class="page">
+    <h2>Shop</h2>
+    <p>Coins: <span id="coin-count">0</span></p>
+    <div>
+      <button onclick="buySkip()">Buy Skip (10 coins)</button>
+    </div>
+    <button onclick="goToMenu()">Back</button>
+  </section>  <script>
+    const pages = document.querySelectorAll(".page");
 
-<div id="menu" class="page active">
-  <h1>🎮 Color Sort Game</h1>
-  <input type="text" id="username" placeholder="Enter username" /><br><br>
-  <button class="menu-btn" onclick="startGame()">Start Game</button>
-  <button class="menu-btn" onclick="showPage('shop')">Shop</button>
-  <button class="menu-btn" onclick="showPage('leaderboard')">Leaderboard</button>
-</div>
+    const gameState = {
+      username: "",
+      currentLevel: 1,
+      coins: 0,
+      skips: 0,
+      tubes: []
+    };
 
-<div id="game" class="page">
-  <h2 id="level-title">Level 1</h2>
-  <div id="game-area"></div>
-  <p>Coins: <span id="coin-count">0</span></p>
-  <button class="menu-btn" onclick="restartLevel()">Restart</button>
-  <button class="menu-btn" onclick="skipLevel()">Skip Level (Ad/Coin)</button>
-  <button class="menu-btn" onclick="nextLevel()">Next Level</button>
-  <button class="menu-btn" onclick="showPage('menu')">Back to Menu</button>
-</div>
+    function showPage(id) {
+      pages.forEach(p => p.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
 
-<div id="shop" class="page">
-  <h2>🛒 Coin Shop</h2>
-  <div class="shop-item">
-    Buy Skip: <button onclick="buyItem('skip')">100 Coins</button>
-  </div>
-  <div class="shop-item">
-    Change Theme: <button onclick="changeTheme()">50 Coins</button>
-  </div>
-  <button class="menu-btn" onclick="showPage('menu')">Back to Menu</button>
-</div>
+    function goToMenu() {
+      showPage("menu-page");
+      document.getElementById("coin-count").textContent = gameState.coins;
+    }
 
-<div id="leaderboard" class="page">
-  <h2>🏆 Leaderboard</h2>
-  <ul id="leaderboard-list"></ul>
-  <button class="menu-btn" onclick="showPage('menu')">Back to Menu</button>
-</div>
+    function goToShop() {
+      showPage("shop-page");
+      document.getElementById("coin-count").textContent = gameState.coins;
+    }
 
-<script>
-const tubesData = [
-  ['red', 'blue', 'green', 'red'],
-  ['green', 'blue', 'red', 'green'],
-  ['blue', '', '', '']
-];
-let level = 1;
-let coins = 0;
-let username = localStorage.getItem('username') || '';
-let theme = localStorage.getItem('theme') || 'light';
+    function startGame() {
+      const name = document.getElementById("username").value;
+      if (!name) return alert("Please enter a username");
+      gameState.username = name;
+      loadLevel(gameState.currentLevel);
+      showPage("game-page");
+    }
 
-if (username) document.getElementById('username').value = username;
+    function restartGame() {
+      loadLevel(gameState.currentLevel);
+    }
 
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function startGame() {
-  username = document.getElementById('username').value;
-  if (!username) return alert('Please enter your username');
-  localStorage.setItem('username', username);
-  showPage('game');
-  loadLevel();
-}
-
-function loadLevel() {
-  document.getElementById('game-area').innerHTML = '';
-  document.getElementById('level-title').innerText = 'Level ' + level;
-  tubesData.forEach(colors => {
-    const tube = document.createElement('div');
-    tube.className = 'tube';
-    colors.forEach((color, i) => {
-      if (color) {
-        const div = document.createElement('div');
-        div.className = 'color';
-        div.style.background = color;
-        div.style.bottom = `${i * 25}%`;
-        tube.appendChild(div);
+    function skipLevel() {
+      if (gameState.skips > 0) {
+        gameState.skips--;
+        gameState.currentLevel++;
+        loadLevel(gameState.currentLevel);
+      } else {
+        alert("Not enough skips. Buy more in the shop.");
       }
-    });
-    document.getElementById('game-area').appendChild(tube);
-  });
-  document.getElementById('coin-count').innerText = coins;
-}
+    }
 
-function restartLevel() {
-  loadLevel();
-}
+    function buySkip() {
+      if (gameState.coins >= 10) {
+        gameState.coins -= 10;
+        gameState.skips++;
+        alert("Skip purchased!");
+      } else {
+        alert("Not enough coins");
+      }
+      document.getElementById("coin-count").textContent = gameState.coins;
+    }
 
-function skipLevel() {
-  if (coins >= 100) {
-    coins -= 100;
-    level++;
-    saveProgress();
-    loadLevel();
-  } else {
-    alert('Watch an ad to skip (simulated).');
-    level++;
-    saveProgress();
-    loadLevel();
-  }
-}
+    function loadLevel(level) {
+      document.getElementById("level-number").textContent = level;
+      // Example puzzles, real logic should load based on level
+      const puzzles = [
+        [
+          ["red", "blue", "red", "blue"],
+          ["green", "green", "yellow", "yellow"],
+          [],
+          []
+        ],
+        [
+          ["red", "red", "blue", "blue"],
+          ["yellow", "green", "yellow", "green"],
+          [],
+          []
+        ]
+      ];
+      gameState.tubes = puzzles[(level - 1) % puzzles.length];
+      renderGame();
+    }
 
-function nextLevel() {
-  coins += 50;
-  level++;
-  saveProgress();
-  loadLevel();
-}
+    function renderGame() {
+      const container = document.getElementById("game-container");
+      container.innerHTML = "";
+      gameState.tubes.forEach((tube, index) => {
+        const tubeDiv = document.createElement("div");
+        tubeDiv.className = "tube";
+        tubeDiv.dataset.index = index;
+        tube.forEach(color => {
+          const ball = document.createElement("div");
+          ball.className = `ball ${color}`;
+          tubeDiv.appendChild(ball);
+        });
+        container.appendChild(tubeDiv);
+      });
+    }
 
-function buyItem(item) {
-  if (item === 'skip' && coins >= 100) {
-    coins -= 100;
-    alert('Skip item purchased!');
-  }
-  saveProgress();
-}
+    window.onload = () => {
+      if (localStorage.getItem("coins")) {
+        gameState.coins = parseInt(localStorage.getItem("coins"));
+      }
+      if (localStorage.getItem("username")) {
+        gameState.username = localStorage.getItem("username");
+        document.getElementById("username").value = gameState.username;
+      }
+    }
 
-function changeTheme() {
-  if (coins >= 50) {
-    coins -= 50;
-    theme = theme === 'light' ? 'dark' : 'light';
-    document.body.style.background = theme === 'dark' ? '#222' : '#f0f0f0';
-    saveProgress();
-  }
-}
-
-function saveProgress() {
-  localStorage.setItem('coins', coins);
-  localStorage.setItem('level', level);
-  localStorage.setItem('theme', theme);
-}
-
-function loadProgress() {
-  coins = parseInt(localStorage.getItem('coins')) || 0;
-  level = parseInt(localStorage.getItem('level')) || 1;
-  if (theme === 'dark') document.body.style.background = '#222';
-  document.getElementById('coin-count').innerText = coins;
-}
-
-function initLeaderboard() {
-  const list = document.getElementById('leaderboard-list');
-  list.innerHTML = `<li>${username}: Level ${level}</li>`;
-}
-
-loadProgress();
-initLeaderboard();
-</script>
-
-</body>
-</html>
+    window.onbeforeunload = () => {
+      localStorage.setItem("coins", gameState.coins);
+      localStorage.setItem("username", gameState.username);
+    }
+  </script></body>
+      </html>
